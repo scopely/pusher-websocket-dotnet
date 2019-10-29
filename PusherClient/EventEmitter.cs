@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 
 namespace PusherClient
 {
     /// <summary>
     /// Class used to Bind and unbind from events
     /// </summary>
-    public class EventEmitter
+    public class EventEmitter : IRequiresJsonSerializer
     {
         private readonly Dictionary<string, List<Action<dynamic>>> _eventListeners = new Dictionary<string, List<Action<dynamic>>>();
         private readonly List<Action<string, dynamic>> _generalListeners = new List<Action<string, dynamic>>();
@@ -18,6 +17,18 @@ namespace PusherClient
 
         private readonly Dictionary<string, List<Action<PusherEvent>>> _pusherEventEventListeners = new Dictionary<string, List<Action<PusherEvent>>>();
         private readonly List<Action<string, PusherEvent>> _pusherEventGeneralListeners = new List<Action<string, PusherEvent>>();
+
+        public IJsonSerializer JsonSerializer { get; protected set; }
+
+        public EventEmitter()
+        {
+
+        }
+
+        internal EventEmitter(IJsonSerializer serializer)
+        {
+            JsonSerializer = serializer;
+        }
 
         /// <summary>
         /// Binds to a given event name
@@ -189,7 +200,7 @@ namespace PusherClient
         {
             if (_generalListeners.Count > 0 || _eventListeners.Count > 0)
             {
-                var dynamicData = JsonConvert.DeserializeObject<dynamic>(data);
+                var dynamicData = JsonSerializer.Deserialize<dynamic>(data);
                 ActionData(_generalListeners, _eventListeners, eventName, dynamicData);
             }
         }

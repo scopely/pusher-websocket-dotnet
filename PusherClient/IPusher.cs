@@ -1,8 +1,6 @@
-﻿using System.Collections.Generic;
-
-namespace PusherClient
+﻿namespace PusherClient
 {
-    internal interface IPusher
+    internal interface IPusher : IRequiresJsonSerializer
     {
         void ConnectionStateChanged(ConnectionState state);
         void ErrorOccured(PusherException pusherException);

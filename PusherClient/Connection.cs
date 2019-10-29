@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using WebSocket4Net;
 
 namespace PusherClient
@@ -123,42 +121,30 @@ namespace PusherClient
             // bad:  "{\"event\":\"pusher:error\",\"data\":{\"code\":4201,\"message\":\"Pong reply not received\"}}"
             // good: "{\"event\":\"pusher:error\",\"data\":\"{\\\"code\\\":4201,\\\"message\\\":\\\"Pong reply not received\\\"}\"}";
 
-            var jObject = JObject.Parse(e.Message);
-
-            if (jObject["data"] != null && jObject["data"].Type != JTokenType.String)
-                jObject["data"] = jObject["data"].ToString(Formatting.None);
-
-            var jsonMessage = jObject.ToString(Formatting.None);
-            var template = new { @event = string.Empty, data = string.Empty, channel = string.Empty };
-
-            var message = JsonConvert.DeserializeAnonymousType(jsonMessage, template);
-
-            var eventData = JsonConvert.DeserializeObject<Dictionary<string, object>>(jsonMessage);
-
-            if (jObject["data"] != null)
-                eventData["data"] = jObject["data"].ToString(Formatting.None); // undo any kind of deserialisation of the data property
+            var jsonMessage = _pusher.JsonSerializer.GetJsonWithStringProperty(e.Message, "data");
+            var eventData = _pusher.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonMessage);
 
             var receivedEvent = new PusherEvent(eventData, jsonMessage);
 
-            _pusher.EmitPusherEvent(message.@event, receivedEvent);
+            _pusher.EmitPusherEvent(receivedEvent.EventName, receivedEvent);
 
-            if (message.@event.StartsWith(Constants.PUSHER_MESSAGE_PREFIX))
+            if (receivedEvent.EventName.StartsWith(Constants.PUSHER_MESSAGE_PREFIX))
             {
                 // Assume Pusher event
-                switch (message.@event)
+                switch (receivedEvent.EventName)
                 {
                     // TODO - Need to handle Error on subscribing to a channel
 
                     case Constants.ERROR:
-                        ParseError(message.data);
+                        ParseError(receivedEvent.Data);
                         break;
 
                     case Constants.CONNECTION_ESTABLISHED:
-                        ParseConnectionEstablished(message.data);
+                        ParseConnectionEstablished(receivedEvent.Data);
                         break;
 
                     case Constants.CHANNEL_SUBSCRIPTION_SUCCEEDED:
-                        _pusher.SubscriptionSuceeded(message.channel, message.data);
+                        _pusher.SubscriptionSuceeded(receivedEvent.ChannelName, receivedEvent.Data);
                         break;
 
                     case Constants.CHANNEL_SUBSCRIPTION_ERROR:
@@ -166,21 +152,21 @@ namespace PusherClient
                         break;
 
                     case Constants.CHANNEL_MEMBER_ADDED:
-                        _pusher.AddMember(message.channel, message.data);
+                        _pusher.AddMember(receivedEvent.ChannelName, receivedEvent.Data);
 
-                        Pusher.Trace.TraceEvent(TraceEventType.Warning, 0, "Received a presence event on channel '" + message.channel + "', however there is no presence channel which matches.");
+                        Pusher.Trace.TraceEvent(TraceEventType.Warning, 0, "Received a presence event on channel '" + receivedEvent.ChannelName + "', however there is no presence channel which matches.");
                         break;
 
                     case Constants.CHANNEL_MEMBER_REMOVED:
-                        _pusher.RemoveMember(message.channel, message.data);
+                        _pusher.RemoveMember(receivedEvent.ChannelName, receivedEvent.Data);
 
-                        Pusher.Trace.TraceEvent(TraceEventType.Warning, 0, "Received a presence event on channel '" + message.channel + "', however there is no presence channel which matches.");
+                        Pusher.Trace.TraceEvent(TraceEventType.Warning, 0, "Received a presence event on channel '" + receivedEvent.ChannelName + "', however there is no presence channel which matches.");
                         break;
                 }
             }
             else // Assume channel event
             {
-                _pusher.EmitChannelEvent(message.channel, message.@event, receivedEvent);
+                _pusher.EmitChannelEvent(receivedEvent.ChannelName, receivedEvent.EventName, receivedEvent);
             }
         }
 
@@ -239,19 +225,28 @@ namespace PusherClient
             }
         }
 
+        private class ConnectionEstablishedMessage
+        {
+            public string socket_id { get; set; }
+        }
+
         private void ParseConnectionEstablished(string data)
         {
-            var template = new { socket_id = string.Empty };
-            var message = JsonConvert.DeserializeAnonymousType(data, template);
+            var message = _pusher.JsonSerializer.Deserialize<ConnectionEstablishedMessage>(data);
             SocketId = message.socket_id;
 
             ChangeState(ConnectionState.Connected);
         }
 
+        private class ErrorMessage
+        {
+            public string message { get; set; }
+            public int? code { get; set; }
+        }
+
         private void ParseError(string data)
         {
-            var template = new { message = string.Empty, code = (int?) null };
-            var parsed = JsonConvert.DeserializeAnonymousType(data, template);
+            var parsed = _pusher.JsonSerializer.Deserialize<ErrorMessage>(data);
 
             ErrorCodes error = ErrorCodes.Unkown;
 

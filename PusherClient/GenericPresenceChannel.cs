@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace PusherClient
 {
@@ -75,7 +74,7 @@ namespace PusherClient
         {
             ConcurrentDictionary<string, T> members = new ConcurrentDictionary<string, T>();
 
-            var dataAsObj = JsonConvert.DeserializeObject<SubscriptionData>(data);
+            var dataAsObj = JsonSerializer.Deserialize<SubscriptionData>(data);
 
             for (int i = 0; i < (int)dataAsObj.presence.count; i++)
             {
@@ -95,7 +94,7 @@ namespace PusherClient
 
         private KeyValuePair<string, T> ParseMember(string data)
         {
-            var dataAsObj = JsonConvert.DeserializeObject<MemberData>(data);
+            var dataAsObj = JsonSerializer.Deserialize<MemberData>(data);
 
             var id = dataAsObj.user_id;
             var val = dataAsObj.user_info;

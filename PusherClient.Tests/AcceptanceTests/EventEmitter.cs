@@ -17,7 +17,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<dynamic>(o => emittedEvent = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("listener event", myAction);
 
             // Act
@@ -36,7 +36,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string>(o => emittedEvent = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("raw listener event", myAction);
 
             // Act
@@ -55,7 +55,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<PusherEvent>(o => emittedEvent = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("pusher event listener event", myAction);
 
             // Act
@@ -75,7 +75,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string, dynamic>((e, o) => emittedEvent = new Tuple<string, dynamic>(e, o));
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.BindAll(myAction);
 
             // Act
@@ -95,7 +95,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string, string>((e, o) => emittedEvent = new Tuple<string, string>(e, o));
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.BindAll(myAction);
 
             // Act
@@ -115,7 +115,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string, PusherEvent>((e, o) => emittedEvent = new Tuple<string, PusherEvent>(e, o));
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.BindAll(myAction);
 
             // Act
@@ -137,7 +137,7 @@ namespace PusherClient.Tests.AcceptanceTests
             var myAction = new Action<dynamic>(o => emittedEvent = o);
             var myAction2 = new Action<dynamic>(o => emittedEvent2 = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("listener event", myAction);
             emitter.Bind("listener event", myAction2);
             emitter.Unbind("listener event", myAction);
@@ -160,7 +160,7 @@ namespace PusherClient.Tests.AcceptanceTests
             var myAction = new Action<string>(o => emittedEvent = o);
             var myAction2 = new Action<string>(o => emittedEvent2 = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("raw listener event", myAction);
             emitter.Bind("raw listener event", myAction2);
             emitter.Unbind("raw listener event", myAction);
@@ -183,7 +183,7 @@ namespace PusherClient.Tests.AcceptanceTests
             var myAction = new Action<PusherEvent>(o => emittedEvent = o);
             var myAction2 = new Action<PusherEvent>(o => emittedEvent2 = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("pusher event listener event", myAction);
             emitter.Bind("pusher event listener event", myAction2);
             emitter.Unbind("pusher event listener event", myAction);
@@ -206,7 +206,7 @@ namespace PusherClient.Tests.AcceptanceTests
             var myAction = new Action<dynamic>(o => emittedEvent = o);
             var myAction2 = new Action<dynamic>(o => emittedEvent2 = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("listener event", myAction);
             emitter.Bind("listener event", myAction2);
             emitter.Unbind("listener event");
@@ -229,7 +229,7 @@ namespace PusherClient.Tests.AcceptanceTests
             var myAction = new Action<string>(o => emittedEvent = o);
             var myAction2 = new Action<string>(o => emittedEvent2 = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("raw listener event", myAction);
             emitter.Bind("raw listener event", myAction2);
             emitter.Unbind("raw listener event");
@@ -252,7 +252,7 @@ namespace PusherClient.Tests.AcceptanceTests
             var myAction = new Action<PusherEvent>(o => emittedEvent = o);
             var myAction2 = new Action<PusherEvent>(o => emittedEvent2 = o);
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.Bind("pusher event listener event", myAction);
             emitter.Bind("pusher event listener event", myAction2);
             emitter.Unbind("pusher event listener event");
@@ -273,7 +273,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string, dynamic>((e, o) => emittedEvent = new Tuple<string, dynamic>(e, o));
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.BindAll(myAction);
             emitter.UnbindAll();
 
@@ -292,7 +292,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string, string>((e, o) => emittedEvent = new Tuple<string, string>(e, o));
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.BindAll(myAction);
             emitter.UnbindAll();
 
@@ -311,7 +311,7 @@ namespace PusherClient.Tests.AcceptanceTests
 
             var myAction = new Action<string, PusherEvent>((e, o) => emittedEvent = new Tuple<string, PusherEvent>(e, o));
 
-            var emitter = new PusherClient.EventEmitter();
+            var emitter = new PusherClient.EventEmitter(new NewtonsoftJsonSerializer());
             emitter.BindAll(myAction);
             emitter.UnbindAll();
 

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>net45;net46;netstandard1.6</TargetFrameworks>
+    <Configurations>Debug;Release;UnityRelease</Configurations>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -17,14 +18,23 @@
       <PackageIconUrl>https://pusher.com/static_logos/64x64.png</PackageIconUrl>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)' == 'UnityRelease'">
+    <DefineConstants>NO_NEWTONSOFT_JSON</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="WebSocket4Net" Version="0.15.2" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' != 'UnityRelease'">
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>11.0.2</Version>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net46'">

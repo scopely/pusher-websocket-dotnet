@@ -2,7 +2,7 @@
 
 namespace PusherClient
 {
-    internal interface ITriggerChannels
+    internal interface ITriggerChannels : IRequiresJsonSerializer
     {
         Task Trigger(string channelName, string eventName, object obj);
 
