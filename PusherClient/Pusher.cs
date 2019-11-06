@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using PusherClient.Messages;
 
 namespace PusherClient
 {
@@ -306,12 +307,6 @@ namespace PusherClient
             }
 
             return result;
-        }
-
-        private class AuthMessage
-        {
-            public string auth { get; set; }
-            public string channel_data { get; set; }
         }
 
         private async Task<Channel> SubscribeToChannel(string channelName)

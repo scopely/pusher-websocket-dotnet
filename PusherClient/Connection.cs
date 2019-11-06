@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using WebSocket4Net;
+using PusherClient.Messages;
 
 namespace PusherClient
 {
@@ -225,11 +226,6 @@ namespace PusherClient
             }
         }
 
-        private class ConnectionEstablishedMessage
-        {
-            public string socket_id { get; set; }
-        }
-
         private void ParseConnectionEstablished(string data)
         {
             var message = _pusher.JsonSerializer.Deserialize<ConnectionEstablishedMessage>(data);
@@ -238,11 +234,7 @@ namespace PusherClient
             ChangeState(ConnectionState.Connected);
         }
 
-        private class ErrorMessage
-        {
-            public string message { get; set; }
-            public int? code { get; set; }
-        }
+
 
         private void ParseError(string data)
         {
