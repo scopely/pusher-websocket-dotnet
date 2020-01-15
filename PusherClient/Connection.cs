@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using WebSocket4Net;
+using WebSocketSharp;
 using PusherClient.Messages;
 
 namespace PusherClient
@@ -11,6 +11,7 @@ namespace PusherClient
     internal class Connection
     {
         private WebSocket _websocket;
+        private Timer _pingTimer;
 
         private readonly string _url;
         private readonly IPusher _pusher;
@@ -53,18 +54,14 @@ namespace PusherClient
             ChangeState(ConnectionState.Initialized);
             _allowReconnect = true;
 
-            _websocket = new WebSocket(_url)
-            {
-                EnableAutoSendPing = true,
-                AutoSendPingInterval = 1
-            };
+            _websocket = new WebSocket(_url);
 
-            _websocket.Opened += websocket_Opened;
-            _websocket.Error += websocket_Error;
-            _websocket.Closed += websocket_Closed;
-            _websocket.MessageReceived += websocket_MessageReceived;
+            _websocket.OnOpen += websocket_Opened;
+            _websocket.OnError += websocket_Error;
+            _websocket.OnClose += websocket_Closed;
+            _websocket.OnMessage += websocket_MessageReceived;
 
-            _websocket.Open();
+            _websocket.ConnectAsync();
 
             return completionSource.Task;
         }
@@ -109,11 +106,11 @@ namespace PusherClient
             return false;
         }
 
-        private void websocket_MessageReceived(object sender, MessageReceivedEventArgs e)
+        private void websocket_MessageReceived(object sender, MessageEventArgs e)
         {
-            Pusher.Trace.TraceEvent(TraceEventType.Information, 0, "Websocket message received: " + e.Message);
+            Pusher.Trace.TraceEvent(TraceEventType.Information, 0, "Websocket message received: " + e.Data);
 
-            Debug.WriteLine(e.Message);
+            Debug.WriteLine(e.Data);
 
             // DeserializeAnonymousType will throw and error when an error comes back from pusher
             // It stems from the fact that the data object is a string normally except when an error is sent back
@@ -122,7 +119,7 @@ namespace PusherClient
             // bad:  "{\"event\":\"pusher:error\",\"data\":{\"code\":4201,\"message\":\"Pong reply not received\"}}"
             // good: "{\"event\":\"pusher:error\",\"data\":\"{\\\"code\\\":4201,\\\"message\\\":\\\"Pong reply not received\\\"}\"}";
 
-            var jsonMessage = _pusher.JsonSerializer.GetJsonWithStringProperty(e.Message, "data");
+            var jsonMessage = _pusher.JsonSerializer.GetJsonWithStringProperty(e.Data, "data");
             var eventData = _pusher.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonMessage);
 
             var receivedEvent = new PusherEvent(eventData, jsonMessage);
@@ -149,7 +146,7 @@ namespace PusherClient
                         break;
 
                     case Constants.CHANNEL_SUBSCRIPTION_ERROR:
-                        RaiseError(new PusherException("Error received on channel subscriptions: " + e.Message, ErrorCodes.SubscriptionError));
+                        RaiseError(new PusherException("Error received on channel subscriptions: " + e.Data, ErrorCodes.SubscriptionError));
                         break;
 
                     case Constants.CHANNEL_MEMBER_ADDED:
@@ -176,20 +173,34 @@ namespace PusherClient
             Pusher.Trace.TraceEvent(TraceEventType.Information, 0, "Websocket opened OK.");
             _connectionTaskComplete.SetResult(ConnectionState.Connected);
             _connectionTaskComplete = null;
+
+            // We need to manually ping, otherwise the server will time out the connection.
+            _pingTimer = new Timer(DoPing, _websocket, 60000, 60000);
         }
 
-        private void websocket_Closed(object sender, EventArgs e)
+        private void DoPing(object state)
+        {
+            var socket = state as WebSocket;
+            if (socket == null || !socket.IsAlive || socket.ReadyState != WebSocketState.Open)
+                return;
+
+            socket.Ping();
+        }
+
+        private void websocket_Closed(object sender, CloseEventArgs e)
         {
             Pusher.Trace.TraceEvent(TraceEventType.Warning, 0, "Websocket connection has been closed");
 
-            _websocket.Opened -= websocket_Opened;
-            _websocket.Error -= websocket_Error;
-            _websocket.Closed -= websocket_Closed;
-            _websocket.MessageReceived -= websocket_MessageReceived;
+            _websocket.OnOpen -= websocket_Opened;
+            _websocket.OnError -= websocket_Error;
+            _websocket.OnClose -= websocket_Closed;
+            _websocket.OnMessage -= websocket_MessageReceived;
+
+            _pingTimer.Dispose();
 
             if (_websocket != null)
             {
-                _websocket.Dispose();
+                ((IDisposable)_websocket).Dispose();
                 _websocket = null;
             }
 
@@ -211,7 +222,7 @@ namespace PusherClient
             }
         }
 
-        private void websocket_Error(object sender, SuperSocket.ClientEngine.ErrorEventArgs e)
+        private void websocket_Error(object sender, ErrorEventArgs e)
         {
             Pusher.Trace.TraceEvent(TraceEventType.Error, 0, "Error: " + e.Exception);
 
