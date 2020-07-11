@@ -21,5 +21,10 @@
         public string Cluster { get; set; } = "mt1";
 
         internal string Host => $"ws-{Cluster}.pusher.com";
+
+        /// <summary>
+        /// Interface used for internal JSON serialization
+        /// </summary>
+        public IJsonSerializer JsonSerializer { get; set; }
     }
 }

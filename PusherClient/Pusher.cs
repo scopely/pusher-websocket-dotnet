@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
+using PusherClient.Messages;
 
 namespace PusherClient
 {
@@ -98,6 +98,19 @@ namespace PusherClient
             _applicationKey = applicationKey;
 
             _options = options ?? new PusherOptions { Encrypted = false };
+
+            if (options.JsonSerializer == null)
+            {
+#if NO_NEWTONSOFT_JSON
+                throw new ArgumentException(ErrorConstants.JsonSerializerNotProvided, nameof(options));
+#else
+                JsonSerializer = new NewtonsoftJsonSerializer();
+#endif
+            }
+            else
+            {
+                JsonSerializer = options.JsonSerializer;
+            }
         }
 
         void IPusher.ConnectionStateChanged(ConnectionState state)
@@ -309,15 +322,14 @@ namespace PusherClient
                 {
                     var jsonAuth = _options.Authorizer.Authorize(channelName, _connection.SocketId);
 
-                    var template = new { auth = string.Empty, channel_data = string.Empty };
-                    var message = JsonConvert.DeserializeAnonymousType(jsonAuth, template);
+                    var message = JsonSerializer.Deserialize<AuthMessage>(jsonAuth);
 
-                    await _connection.Send(JsonConvert.SerializeObject(new { @event = Constants.CHANNEL_SUBSCRIBE, data = new { channel = channelName, auth = message.auth, channel_data = message.channel_data } }));
+                    await _connection.Send(JsonSerializer.Serialize(new { @event = Constants.CHANNEL_SUBSCRIBE, data = new { channel = channelName, auth = message.auth, channel_data = message.channel_data } }));
                 }
                 else
                 {
                     // No need for auth details. Just send subscribe event
-                    await _connection.Send(JsonConvert.SerializeObject(new { @event = Constants.CHANNEL_SUBSCRIBE, data = new { channel = channelName } }));
+                    await _connection.Send(JsonSerializer.Serialize(new { @event = Constants.CHANNEL_SUBSCRIBE, data = new { channel = channelName } }));
                 }
             }
 
@@ -377,14 +389,14 @@ namespace PusherClient
 
         async Task ITriggerChannels.Trigger(string channelName, string eventName, object obj)
         {
-            await _connection.Send(JsonConvert.SerializeObject(new { @event = eventName, channel = channelName, data = obj }));
+            await _connection.Send(JsonSerializer.Serialize(new { @event = eventName, channel = channelName, data = obj }));
         }
 
         async Task ITriggerChannels.Unsubscribe(string channelName)
         {
             if (_connection.IsConnected)
             {
-                await _connection.Send(JsonConvert.SerializeObject(new
+                await _connection.Send(JsonSerializer.Serialize(new
                 {
                     @event = Constants.CHANNEL_UNSUBSCRIBE,
                     data = new {channel = channelName}

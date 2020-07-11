@@ -32,6 +32,8 @@
         {
             _pusher = pusher;
             Name = channelName;
+
+            JsonSerializer = pusher.JsonSerializer;
         }
 
         internal virtual void SubscriptionSucceeded(string data)
